@@ -1,0 +1,40 @@
+## .NET build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+## Test and coverage output
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.trx
+.sonarqube/
+
+## Local SQLite databases - schema is defined by the migrations, not by a checked-in file
+*.db
+*.db-shm
+*.db-wal
+
+## Logs
+logs/
+*.log
+
+## Secrets. Nothing that resolves a real credential belongs in the repository;
+## appsettings.json carries development-only values on purpose.
+appsettings.Local.json
+appsettings.*.Local.json
+.env
+*.pfx

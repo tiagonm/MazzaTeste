@@ -1,0 +1,58 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,json,yml,yaml,xml}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+# ---------------------------------------------------------------------------
+# Analyser policy
+#
+# The build runs with TreatWarningsAsErrors, so every rule listed here is a
+# deliberate decision rather than accumulated noise. Anything not listed keeps
+# its default severity from <AnalysisLevel>latest-recommended</AnalysisLevel>.
+# ---------------------------------------------------------------------------
+
+# CA1848: prefer LoggerMessage delegates.
+# Enforced by hand where it matters - LoggingBehavior sits on the hot path for
+# every command and query and uses the source-generated delegates. Demoted to a
+# suggestion so one-shot startup logging does not need the same ceremony.
+dotnet_diagnostic.CA1848.severity = suggestion
+
+# CA2007: ConfigureAwait(false).
+# There is no synchronisation context in ASP.NET Core, so this only adds noise.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1062: validate arguments of public methods.
+# Nullable reference types are enabled solution-wide and cover the same ground
+# with compile-time checking instead of runtime guards.
+dotnet_diagnostic.CA1062.severity = none
+
+# CA1515: types could be made internal.
+# The API assembly is exercised by the integration test project through its
+# public surface, and DTOs are part of the published contract.
+dotnet_diagnostic.CA1515.severity = none
+
+# ---------------------------------------------------------------------------
+# Test projects only
+# ---------------------------------------------------------------------------
+[tests/**/*.cs]
+
+# CA1707: no underscores in member names.
+# Test methods are named Method_Scenario_ExpectedResult, because that is what makes
+# a failing test readable in CI output without opening the file. The rule is about
+# public API naming, which does not apply to a test assembly nobody references.
+dotnet_diagnostic.CA1707.severity = none
+
+# CA1034: nested types should not be visible.
+# Test doubles are nested inside the fixture that uses them on purpose - it keeps
+# them out of the way of every other test in the assembly.
+dotnet_diagnostic.CA1034.severity = none
