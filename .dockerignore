@@ -1,0 +1,29 @@
+# Build output: copying host bin/obj into the image poisons the container build with
+# artifacts compiled against a different SDK, and slows every COPY down.
+**/bin/
+**/obj/
+**/out/
+
+# Local databases and logs
+*.db
+*.db-shm
+*.db-wal
+**/logs/
+
+# Version control and tooling
+.git/
+.gitignore
+.github/
+.vs/
+.vscode/
+.idea/
+
+# Test projects are not part of the published image. The sonar-scanner service does
+# need them, and mounts the source tree directly instead of relying on this context.
+tests/
+
+# Documentation and the test brief
+*.md
+*.pdf
+Dockerfile
+docker-compose.yml

@@ -1,0 +1,109 @@
+name: mazza-orders
+
+services:
+  # ===========================================================================
+  # The API. This is all you need: `docker compose up --build`
+  # ===========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mazza-orders-api:latest
+    container_name: mazza-orders-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Development so the Scalar API explorer is served at /scalar/v1 - the point of
+      # running this locally is to click around, and there is nothing confidential in
+      # a throwaway container.
+      ASPNETCORE_ENVIRONMENT: Development
+
+      # Overridden explicitly rather than left to appsettings.Development.json, which
+      # switches it off for local `dotnet run`. In the container the OpenTelemetry
+      # console output is something you want to see.
+      Telemetry__ConsoleExporterEnabled: "true"
+
+      # How a real deployment supplies the signing key: an environment variable, not
+      # a value committed to source. The double underscore is the .NET convention for
+      # nesting, so this maps onto the Jwt:SigningKey configuration entry.
+      #
+      # There is intentionally no fallback value here. Left unset, the container runs
+      # in Development and generates a random key per start - so `docker compose up`
+      # still works out of the box, and this file holds no shared secret for anyone
+      # to copy into a real deployment. Pin it by exporting JWT_SIGNING_KEY or
+      # putting it in a .env file (see .env.example).
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:-}"
+
+      ConnectionStrings__OrdersDatabase: "Data Source=/data/orders.db"
+    volumes:
+      # Named volume, so `docker compose down` keeps the orders and only
+      # `down --volumes` throws them away.
+      - orders-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 3s
+      start_period: 20s
+      retries: 3
+
+  # ===========================================================================
+  # Static analysis (optional extra from the "desejável" list).
+  #
+  # Behind a profile because SonarQube wants roughly 2 GB of RAM and a minute to
+  # start, which nobody wants imposed on them just to run the API:
+  #
+  #   docker compose --profile sonar up -d sonarqube
+  #   # then create a project token at http://localhost:9000 (admin/admin)
+  #   SONAR_TOKEN=<token> docker compose --profile sonar run --rm sonar-scanner
+  # ===========================================================================
+  sonarqube:
+    image: sonarqube:community
+    container_name: mazza-orders-sonarqube
+    profiles: ["sonar"]
+    ports:
+      - "9000:9000"
+    environment:
+      # Elasticsearch's bootstrap checks fail on most developer machines because of
+      # vm.max_map_count. Disabling them is standard for a local, throwaway instance.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 20
+
+  sonar-scanner:
+    build:
+      context: .
+      dockerfile: docker/sonar-scanner.Dockerfile
+    container_name: mazza-orders-sonar-scanner
+    profiles: ["sonar"]
+    depends_on:
+      sonarqube:
+        condition: service_healthy
+    environment:
+      SONAR_HOST_URL: "http://sonarqube:9000"
+      # Deliberately a plain default rather than the ${VAR:?err} required-variable
+      # form: Compose interpolates the whole file before it filters by profile, so
+      # ${VAR:?} here would break a plain `docker compose up` for anyone not running
+      # a scan. docker/sonar-scan.sh fails with a clear message if it is empty.
+      SONAR_TOKEN: "${SONAR_TOKEN:-}"
+      SONAR_PROJECT_KEY: "${SONAR_PROJECT_KEY:-mazza-orders}"
+    volumes:
+      - ./:/src
+      # Keeps the scanner's package downloads out of the repository working tree and
+      # warm between runs.
+      - nuget-cache:/root/.nuget/packages
+
+volumes:
+  orders-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
+  nuget-cache:
