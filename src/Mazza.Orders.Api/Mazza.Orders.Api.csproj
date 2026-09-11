@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>mazza-orders-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Top-level statements compile to an internal Program class. WebApplicationFactory
+         needs to see it to boot the real application in-process. -->
+    <InternalsVisibleTo Include="Mazza.Orders.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mazza.Orders.Application\Mazza.Orders.Application.csproj" />
+    <!-- Referenced only so composition root can call AddInfrastructure(). -->
+    <ProjectReference Include="..\Mazza.Orders.Infrastructure\Mazza.Orders.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
