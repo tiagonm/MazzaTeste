@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Domain layer has ZERO dependencies - not even on Microsoft.Extensions.*.
+    That is the whole point: business rules must be compilable and testable
+    without a database, a web server or a DI container in sight.
+  -->
+
+</Project>
